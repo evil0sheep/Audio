@@ -33,7 +33,7 @@ public:
       auto start = micros();  
       novelty_function_.compute(fft);
       tempo_estimator_.compute(novelty_function_);
-      bpm_ = (1- BPM_FILTER_PARAM) * bpm_ + BPM_FILTER_PARAM * tempo_estimator_.bpm(115 * BPM_MULTIPLIER);
+      bpm_ = (1- BPM_FILTER_PARAM) * bpm_ + BPM_FILTER_PARAM * tempo_estimator_.bpm();
 
       // first send the full set of candidate peaks to the beat tracker
       novelty_function_.getPeaks(candidate_beats_, MAX_BEATS, NoveltyFunction::PeakSortOrder::INDEX);

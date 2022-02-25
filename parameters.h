@@ -9,14 +9,14 @@
 #define EPSILON 0.0000001
 
 // Tempo estimation params
-#define DEFAULT_CENTER_BPM 120.0
-#define WEIGHTING_WIDTH 0.5
+#define DEFAULT_CENTER_BPM 140.0
+#define WEIGHTING_WIDTH 0.4
 
 //Be0at Tracker Params
 #define TIGHTNESS 100
 #define MAX_BEATS  256
 #define ALPHA 1
-#define BETA 1000
+#define BETA 100
 #define GAMMA 1
 #define SIGMA 1
 #define TEMPO_ERROR_THRESHOLD -0.05
@@ -24,5 +24,5 @@
 #define BPM_MULTIPLIER 1
 
 // Debug params
-#define DEBUG 0
+#define DEBUG 1
 #define PLOT_BINS  512
