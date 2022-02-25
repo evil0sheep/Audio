@@ -16,7 +16,7 @@
 #define TIGHTNESS 100
 #define MAX_BEATS  256
 #define ALPHA 1
-#define BETA 100
+#define BETA 10000
 #define GAMMA 1
 #define SIGMA 1
 #define TEMPO_ERROR_THRESHOLD -0.05
