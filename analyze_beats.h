@@ -1,16 +1,14 @@
-#ifndef beat_tracker_h_
-#define beat_tracker_h_
+#ifndef analyze_beats_h_
+#define analyze_beats_h_
 
-#include "novelty_function.h"
+#include "analyze_spectral_novelty.h"
 #include "parameters.h"
 
-class BeatTracker{
+class AudioAnalyzeBeatTracker{
 public:
 
-    
-  void trackBeats(const NoveltyFunction &novelty_function, const NoveltyFunction::Peak *candidate_beats, size_t num_candidates, float bpm, size_t fft_res, size_t tightness){
-    
-      memcpy(candidate_beats_,  &candidate_beats[MAX_BEATS - num_candidates], num_candidates * sizeof(NoveltyFunction::Peak));
+  void trackBeats(const AudioAnalyzeSpectralNovelty &novelty_function, const AudioAnalyzeSpectralNovelty::Peak *candidate_beats, size_t num_candidates, float bpm, size_t fft_res, size_t tightness){
+      memcpy(candidate_beats_,  &candidate_beats[MAX_BEATS - num_candidates], num_candidates * sizeof(AudioAnalyzeSpectralNovelty::Peak));
 
 
       size_t beat_size = fft_res * 60.f/bpm;
@@ -22,32 +20,22 @@ public:
        uint32_t current_micros = micros();
        auto elapsed_micros = current_micros - prev_last_beat_micros_;
        prev_last_beat_micros_ = current_micros;
-       
        size_t expected_last_beat_index_ = prev_last_beat_index__ - (elapsed_micros/1000000.f) * fft_res / 8;
-      
       for(size_t i = 0; i < num_candidates; i++){
         best_score_[i] = -10000000000;
         backlink_[i] = 0;
         cumulative_continuity_error_[i] = 0;
         backlink_depth_[i]  = 0;
-        
         for(size_t j = 0; j < i; j++){
           if(candidate_beats_[i].index - candidate_beats_[j].index > 2 * beat_size) continue;
           float tempo_error = tempoError(candidate_beats_[i].index - candidate_beats_[j].index, bpm, fft_res);
           float continuity_error = continuityError(candidate_beats_[i].index, expected_last_beat_index_, bpm, fft_res);
 
-          size_t backlink_depth = backlink_depth_[j] +1;
-          float cumulative_continuity_error = continuity_error + cumulative_continuity_error_[j];
-          float avg_continuity_error = cumulative_continuity_error / backlink_depth;
-          
-//          if(tempo_error < TEMPO_ERROR_THRESHOLD) break;
-
           float score = ALPHA * tempo_error + BETA * continuity_error + GAMMA * candidate_beats_[i].value ; 
           if(score > best_score_[i]){
             best_score_[i] = score;
             backlink_[i] = j;
-            cumulative_continuity_error_[i] = cumulative_continuity_error;
-            backlink_depth_[i]  = backlink_depth;
+            backlink_depth_[i]  =  backlink_depth_[j] +1;
           }
         }
 
@@ -58,12 +46,11 @@ public:
         }
       }
 
-      
       prev_last_beat_index__ = (1-SIGMA) * expected_last_beat_index_ + SIGMA * candidate_beats_[last_beat_index_].index;
       while(prev_last_beat_index__ < TIME_BINS - beat_size){
         prev_last_beat_index__ += beat_size;
       }
-      
+
 
       beat_phase_  = ((TIME_BINS - prev_last_beat_index__) / (float) fft_res) / (60.f/bpm);
       beat_phase_ = beat_phase_-floor(beat_phase_);
@@ -74,7 +61,6 @@ public:
 #if DEBUG
       memset(beats_viz, 0, TIME_BINS * sizeof(float));
       size_t curr_beat = last_beat_index_;
-//      beats_viz[candidate_beats_[curr_beat].index] = 1.0;
       while(curr_beat != 0){
         beats_viz[candidate_beats_[curr_beat].index] = 1;
         curr_beat=backlink_[curr_beat];
@@ -85,9 +71,8 @@ public:
         expectation_viz[i] = 1.0;
       }
 
-#endif // DEBUG      
-    
- 
+#endif // DEBUG
+
   }
 
 #if DEBUG
@@ -102,8 +87,8 @@ public:
   }
 
   // writes N beats into the last N slots in |beats|, where N is the max of |len| and the number of beats tracked
-  size_t getBeats(NoveltyFunction::Peak *beats, size_t len){
-      memset(beats, 0, len * sizeof(NoveltyFunction::Peak));
+  size_t getBeats(AudioAnalyzeSpectralNovelty::Peak *beats, size_t len){
+      memset(beats, 0, len * sizeof(AudioAnalyzeSpectralNovelty::Peak));
       size_t curr_beat = last_beat_index_;
       size_t backlink_count = 0;
       while(curr_beat != 0 && backlink_count < len){
@@ -113,10 +98,9 @@ public:
       }
       return backlink_count;
   }
-  
- 
+
 private:
-  NoveltyFunction::Peak candidate_beats_[MAX_BEATS];
+  AudioAnalyzeSpectralNovelty::Peak candidate_beats_[MAX_BEATS];
   float best_score_[MAX_BEATS];
   size_t backlink_[MAX_BEATS];
   size_t backlink_depth_[MAX_BEATS];
@@ -137,15 +121,10 @@ private:
        size_t beat_size = fft_res * 60.f/bpm;
        float continuity_error = 0;
       if(prev_last_beat_micros_ !=0 ){
-        
          continuity_error =-1 *  (abs((expected_index % beat_size) - (index % beat_size)) / ((float) beat_size));
-
       }
       return continuity_error;
   }
-  
 };
 
- 
-
-#endif //beat_tracker_h_
+#endif //analyze_beats_h_

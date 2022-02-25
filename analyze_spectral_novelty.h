@@ -1,35 +1,33 @@
 
-#ifndef novelty_function_h_
-#define novelty_function_h_
+#ifndef analyze_spectral_novelty_h_
+#define analyze_spectral_novelty_h_
 
-#include <Audio.h>
+#include "analyze_fft1024.h"
 #include "parameters.h"
 
 static const size_t PLOT_STEP = TIME_BINS/PLOT_BINS;
 
-class NoveltyFunction {
+class AudioAnalyzeSpectralNovelty {
 public:
-  NoveltyFunction(){
+  AudioAnalyzeSpectralNovelty(){
     memset(novelty_curve, 0, TIME_BINS * sizeof(float));
     memset(peak_curve, 0, TIME_BINS * sizeof(float));
-    
     memset(novelty_plot, 0, PLOT_BINS * sizeof(float));
 
-    for(size_t i = 0; i < 2; i++){ 
+    for(size_t i = 0; i < 2; i++){
       memset(spectrums, 0, FFT_HOP_LENGTH * sizeof(float));
     }
   }
 
-void compute(const AudioAnalyzeFFT1024 &fft){
+void compute(AudioAnalyzeFFT1024 &fft){
     size_t curr_spectrum = (prev_spectrum+1)%2;
-    
     novelty_curve[novelty_index] = 0;
     for(size_t i = 0; i < FFT_HOP_LENGTH; i++){
       // Log compress the current FFT and store
       spectrums[curr_spectrum][i] = log2f(1 + C * fabs(fft.read(i)));
 
-      // Take the per frequency derivative and sum into the novelty curve 
-//       novelty_curve[novelty_index] += fabs(spectrums[curr_spectrum][i] - spectrums[prev_spectrum][i]);
+      // Take the per frequency derivative and sum into the novelty curve
+      // novelty_curve[novelty_index] += fabs(spectrums[curr_spectrum][i] - spectrums[prev_spectrum][i]);
        novelty_curve[novelty_index] += fmax(spectrums[curr_spectrum][i] - spectrums[prev_spectrum][i], 0);
 
     }
@@ -52,14 +50,12 @@ void compute(const AudioAnalyzeFFT1024 &fft){
 
       float value = peak_curve[i1];
       max_peak = fmax(max_peak, value);
-      
       if(value >= peak_curve[i0] && value > peak_curve[i2]){
         peaks[i1] = {i, value};
       }else{
         peaks[i1] = {i, 0};
       }
     }
-    
 
 #ifdef DEBUG
     if(novelty_index % PLOT_STEP == 0){
@@ -92,7 +88,7 @@ void compute(const AudioAnalyzeFFT1024 &fft){
     }
   }
 
-  size_t length() { return TIME_BINS;}
+  size_t length() const { return TIME_BINS;}
 
 
   struct Peak{
@@ -115,13 +111,13 @@ void compute(const AudioAnalyzeFFT1024 &fft){
     for(size_t i = 0; i< n; i++){
       out[i].value /= max_peak;
     }
-    
+
     if(order == PeakSortOrder::INDEX){
       qsort(out, n, sizeof(Peak), comparePeakIndex );
     }
   }
 
-  
+
 #ifdef DEBUG
   // if you Serial.print this buffer one bin per line the Arduino Serial Plotter can render the novelty curve
   float novelty_plot[PLOT_BINS];
@@ -131,7 +127,7 @@ void compute(const AudioAnalyzeFFT1024 &fft){
   }
 #endif // DEBUG
 
-  
+
 private:
 
    float spectrums[2][FFT_HOP_LENGTH];
@@ -140,37 +136,32 @@ private:
    //These are all circular buffers representing the novelty curve in some state
    float novelty_curve[TIME_BINS];
    // think of this as the index of the current columnn in the spectrogram
-   size_t novelty_index = 0; 
+   size_t novelty_index = 0;
 
    float peak_curve[TIME_BINS];
    float max_peak = EPSILON;
-   // Sorted list of peaks in peak curve. 
+   // Sorted list of peaks in peak curve.
    Peak peaks[TIME_BINS];
-   
+
    // peak comparators for sorting
    static int comparePeakValue( const void* a, const void* b)
    {
        Peak *peak_a =  (Peak*) a ;
        Peak *peak_b =  (Peak*) b ;
-  
+
        if ( peak_a->value  == peak_b->value ) return 0;
        else if ( peak_a->value < peak_b->value ) return 1;
        else return -1;
    }
-   
+
    static int comparePeakIndex( const void* a, const void* b)
    {
        Peak *peak_a =  (Peak*) a ;
        Peak *peak_b =  (Peak*) b ;
-  
+
        return (int) peak_a->index  - (int) peak_b->index;
    }
-   
-
-   
-
-
 
 };
 
-#endif // novelty_function_h_
+#endif // analyze_spectral_novelty_h_
