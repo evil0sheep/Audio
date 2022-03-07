@@ -22,7 +22,7 @@ public:
        prev_last_beat_micros_ = current_micros;
        size_t expected_last_beat_index_ = prev_last_beat_index__ - (elapsed_micros/1000000.f) * fft_res / 8;
       for(size_t i = 0; i < num_candidates; i++){
-        best_score_[i] = -10000000000;
+        best_score_[i] = -3.4e8;
         backlink_[i] = 0;
         cumulative_continuity_error_[i] = 0;
         backlink_depth_[i]  = 0;
