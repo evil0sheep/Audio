@@ -15,6 +15,7 @@
 //Be0at Tracker Params
 #define TIGHTNESS 1000
 #define MAX_BEATS  256
+#define ENVELOPE_WEIGHT 1
 #define TEMPO_WEIGHT 1
 #define CONTINUITY_WEIGHT 1
 #define RECURSION_WEIGHT 1

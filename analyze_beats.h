@@ -32,7 +32,7 @@ public:
           float continuity_error = continuityError(candidate_beats_[i].index, expected_last_beat_index_, bpm, fft_res);
 
 
-          float score = candidate_beats_[i].value + TEMPO_WEIGHT * tempo_error + CONTINUITY_WEIGHT * continuity_error + RECURSION_WEIGHT * best_score_[j] / ( BACKLINK_PENALTY * backlink_depth_[j] + 1);
+          float score = ENVELOPE_WEIGHT * candidate_beats_[i].value + TEMPO_WEIGHT * tempo_error + CONTINUITY_WEIGHT * continuity_error + RECURSION_WEIGHT * best_score_[j] / ( BACKLINK_PENALTY * backlink_depth_[j] + 1);
           // float score = continuity_error;
           if(score > best_score_[i]){
             best_score_[i] = score ;
