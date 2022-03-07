@@ -26,8 +26,8 @@ public:
         backlink_[i] = 0;
         cumulative_continuity_error_[i] = 0;
         backlink_depth_[i]  = 0;
-        for(size_t j = 0; j < i; j++){
-          if(candidate_beats_[i].index - candidate_beats_[j].index > 2 * beat_size) continue;
+        for(size_t j = i; j > 0; --j){
+          if(candidate_beats_[i].index - candidate_beats_[j].index > 2 * beat_size) break;
           float tempo_error = tempoError(candidate_beats_[i].index - candidate_beats_[j].index, bpm, fft_res);
           float continuity_error = continuityError(candidate_beats_[i].index, expected_last_beat_index_, bpm, fft_res);
 
