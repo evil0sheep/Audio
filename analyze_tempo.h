@@ -52,7 +52,8 @@ public:
 //  }
 
   float bpm(float center_frequency_bpm = DEFAULT_CENTER_BPM){
-    return interpolatePeak(index(center_frequency_bpm)) * bin_resolution_bpm;
+    float bpm = interpolatePeak(index(center_frequency_bpm)) * bin_resolution_bpm;
+    return isnan(bpm) || bpm <= 0 ? center_frequency_bpm : bpm;
   }
   size_t index(float center_frequency_bpm){
 
