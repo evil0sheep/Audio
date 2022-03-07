@@ -37,8 +37,8 @@ public:
       spectral_novelty_.getPeaks(candidate_beats_, MAX_BEATS, AudioAnalyzeSpectralNovelty::PeakSortOrder::INDEX);
       beat_tracker_.trackBeats(spectral_novelty_, candidate_beats_, MAX_BEATS, bpm_, FFT_RESOLUTION, TIGHTNESS);
 
-      size_t num_beats = beat_tracker_.getBeats(candidate_beats_, MAX_BEATS);
-      downbeat_estimator_.trackBeats(spectral_novelty_, candidate_beats_, num_beats, bpm_/4.0, FFT_RESOLUTION, TIGHTNESS);
+      // size_t num_beats = beat_tracker_.getBeats(candidate_beats_, MAX_BEATS);
+      // downbeat_estimator_.trackBeats(spectral_novelty_, candidate_beats_, num_beats, bpm_/4.0, FFT_RESOLUTION, TIGHTNESS);
 
 
       is_available = true;
