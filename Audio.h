@@ -63,7 +63,7 @@
 #include "analyze_print.h"
 #include "analyze_tonedetect.h"
 #include "analyze_notefreq.h"
-#include "analyze_rhythm.h"
+#include "rhythm/analyze_rhythm.h"
 #include "analyze_peak.h"
 #include "analyze_rms.h"
 #include "async_input_spdif3.h"
