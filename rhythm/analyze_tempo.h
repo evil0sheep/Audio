@@ -1,7 +1,13 @@
 #ifndef analyze_tempo_h_
 #define analyze_tempo_h_
 
+
+#if defined(TRAIN_PARAMETERS)
+#include "kiss_fft.h"
+#else
 #include "arm_math.h"
+#endif
+
 #include "analyze_spectral_novelty.h"
 #include "parameters.h"
 
@@ -14,25 +20,44 @@ static const float bin_resolution_bpm = bin_resolution_hz * 60;
 class AudioAnalyzeTempoDetector{
 public:
   AudioAnalyzeTempoDetector()  {
-     arm_cfft_radix2_init_f32(&novelty_fft, TIME_BINS, 0, 1);
+
+    #if defined(TRAIN_PARAMETERS)
+      novelty_fft = kiss_fft_alloc( TIME_BINS ,0 ,0,0);
+    #else
+	    arm_cfft_radix2_init_f32(&novelty_fft, TIME_BINS, 0, 1);
+	  #endif
+
   }
 
   void compute(const AudioAnalyzeSpectralNovelty &novelty_function){
+
+#if defined(TRAIN_PARAMETERS)
+
+    memset(novelty_fft_buffer, 0, TIME_BINS * sizeof(kiss_fft_cpx));
+    for(size_t i = 0; i < TIME_BINS; i++){
+      novelty_fft_buffer[i].r = novelty_function.read(i);
+    }
+    kiss_fft(novelty_fft,novelty_fft_buffer, novelty_fft_buffer);
+
+    for (size_t i=0; i < NOV_SPECTRUM_BINS/2; i++) {
+      float real = novelty_fft_buffer[i].r;
+      float imag = novelty_fft_buffer[i].i;
+      novelty_spectrum[i] = sqrtf(real * real + imag * imag);
+
+#else
+
     memset(novelty_fft_buffer, 0, 2 * TIME_BINS * sizeof(float));
     for(size_t i = 0; i < TIME_BINS; i++){
       novelty_fft_buffer[ i * 2] = novelty_function.read(i);
     }
     arm_cfft_radix2_f32 (&novelty_fft, novelty_fft_buffer);
-    for (size_t i=0; i < NOV_SPECTRUM_BINS; i++) {
-      float real = novelty_fft_buffer[i * 2];
-      float imag = novelty_fft_buffer[i * 2 + 1];
-      novelty_spectrum[i] = sqrtf(real * real + imag * imag);
-    }
 
     for (size_t i=0; i < NOV_SPECTRUM_BINS/2; i++) {
       float real = novelty_fft_buffer[i * 2];
       float imag = novelty_fft_buffer[i * 2 + 1];
       novelty_spectrum[i] = sqrtf(real * real + imag * imag);
+
+#endif
 
 #ifdef DEBUG
       if(i % NOV_SPECTRUM_PLOT_STEP == 0){
@@ -94,9 +119,15 @@ public:
 
 private:
 
-  arm_cfft_radix2_instance_f32 novelty_fft;
+	#if defined(TRAIN_PARAMETERS)
+		kiss_fft_cfg novelty_fft;
+    kiss_fft_cpx novelty_fft_buffer[TIME_BINS];
+	#else
+		arm_cfft_radix2_instance_f32 novelty_fft;
+    float novelty_fft_buffer[ 2 * TIME_BINS];
 
-  float novelty_fft_buffer[ 2 * TIME_BINS];
+	#endif
+
 
   float novelty_spectrum[NOV_SPECTRUM_BINS];
 

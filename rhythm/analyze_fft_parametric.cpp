@@ -24,12 +24,44 @@
  * THE SOFTWARE.
  */
 
-#include <Arduino.h>
-#include "analyze_fft1024.h"
+#include "analyze_fft_parametric.h"
+
+
+#if defined(TRAIN_PARAMETERS)
+
+#else
 #include "sqrt_integer.h"
 #include "utility/dspinst.h"
+#include "arm_math.h"
 #define __ARM_ARCH_7EM__
+#endif
 
+#if defined(TRAIN_PARAMETERS)
+	float AudioAnalyzeFFTParametric::read(unsigned int binNumber) {
+		return output_[binNumber];
+	}
+	void writeFloatToWindow(float val, float *window, size_t n){
+		window[n]= val;
+	}
+
+#else
+	float AudioAnalyzeFFTParametric::read(unsigned int binNumber) {
+		if (binNumber > 511) return 0.0;
+		return (float)(((uint16_t*)output_)[binNumber]) * (1.0f / 16384.0f);
+	}
+	void writeFloatToWindow(float val, int16_t *window, size_t n){
+		arm_float_to_q15(&val, window[n], 1);
+	}
+#endif
+
+
+// math from https://en.wikipedia.org/wiki/Hann_function
+void computeHanningWindow(DATA_TYPE *window, size_t N){
+	for(size_t n=0; n < N; n++){
+		float val = 0.5 * (1 - cosf(2 * PI * n / (float) N));
+		writeFloatToWindow(val, window, n);
+	}
+}
 
 // 140312 - PAH - slightly faster copy
 #if defined(__ARM_ARCH_7EM__)
@@ -58,7 +90,7 @@ static void apply_window_to_fft_buffer(void *buffer, const void *window)
 }
 #endif
 
-void AudioAnalyzeFFT1024::update(void)
+void AudioAnalyzeFFTParametric::update(void)
 {
 	audio_block_t *block;
 
@@ -97,8 +129,7 @@ void AudioAnalyzeFFT1024::update(void)
 		break;
 	case 7:
 		blocklist[7] = block;
-		// TODO: perhaps distribute the work over multiple update() ??
-		//       github pull requsts welcome......
+
 		copy_to_fft_buffer(buffer+0x000, blocklist[0]->data);
 		copy_to_fft_buffer(buffer+0x100, blocklist[1]->data);
 		copy_to_fft_buffer(buffer+0x200, blocklist[2]->data);

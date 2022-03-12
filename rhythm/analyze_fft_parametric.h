@@ -27,32 +27,40 @@
 #ifndef analyze_fft_parametric_h_
 #define analyze_fft_parametric_h_
 
-#include "Arduino.h"
+
+#if defined(TRAIN_PARAMETERS)
+#define DATA_TYPE float
+#include "MockAudioStream.h"
+#include "kiss_fft.h"
+#define PI 3.141592653589793238
+#else
+#define DATA_TYPE int16_t
 #include "AudioStream.h"
 #include "arm_math.h"
-#include "utility/queue.h"
+#endif
 
-// math from https://en.wikipedia.org/wiki/Hann_function
-void computeHanningWindow(int16_t *window, size_t N){
-	for(size_t n=0; n < N; n++){
-		float val = 0.5 * (1 - cosf(2 * PI * n / (float) N));
-		arm_float_to_q15(&val, window[i], 1);
-	}
-}
+void computeHanningWindow(DATA_TYPE *window, size_t N);
 
 class AudioAnalyzeFFTParametric : public AudioStream
 {
 public:
   struct Parameters{
+
 		size_t window_length = 1024;
+		size_t window_step = 512;
 		// this gives us about 100 ms of buffered audio at 44kHz
 		size_t max_buffered_blocks = 32;
+
+		Parameters(){}
 
 		bool validate(){
 			bool valid = true;
 
 			valid = valid && (window_length > 128) && (window_length <= 4096);
 			valid = valid && ((window_length & (window_length - 1)) == 0) && window_length % 128 == 0;
+
+			valid = valid && (window_step > 128) && (window_step <= window_length);
+
 			valid = valid && max_buffered_blocks > 0 && max_buffered_blocks <= 2048;
 
 			return valid;
@@ -60,7 +68,12 @@ public:
 	};
 
 	AudioAnalyzeFFTParametric(const Parameters params = Parameters()) : AudioStream(1, inputQueueArray), state(0), outputflag(false), params_(params) {
-		arm_cfft_radix4_init_q15(&fft_inst, 1024, 0, 1);
+
+    #if defined(TRAIN_PARAMETERS)
+      fft_inst = kiss_fft_alloc( 1024 ,0 ,0,0);
+    #else
+	    arm_cfft_radix4_init_q15(&fft_inst, 1024, 0, 1);
+	  #endif
 
 		valid_ = params_.validate() && allocateBuffers();
 		if(!valid_) return;
@@ -72,45 +85,60 @@ public:
 		free(window_);
 		free(fft_buffer_);
 		free(output_);
+		kiss_fft_free(fft_inst);
 	}
 
-	bool valid() { return valid_};
+	bool valid() { return valid_;};
 	size_t dynamic_memory() const {
 		return dynamic_memory_;
 	}
 
+	bool available() {
+		if (outputflag == true) {
+			outputflag = false;
+			return true;
+		}
+		return false;
+	}
+
+  float read(unsigned int binNumber);
 
 	void update(void) override;
-	uint16_t *output_ __attribute__ ((aligned (4)));
+	DATA_TYPE *output_ __attribute__ ((aligned (4)));
 private:
 	void init(void);
-	const int16_t *window;
-	int16_t *fft_buffer_ __attribute__ ((aligned (4)));
-	volatile bool can_fft_;
+	const DATA_TYPE *window;
+	DATA_TYPE *fft_buffer_ __attribute__ ((aligned (4)));
+	volatile bool outputflag;
 	audio_block_t *inputQueueArray[1];
-	arm_cfft_radix4_instance_q15 fft_inst;
+	#if defined(TRAIN_PARAMETERS)
+		kiss_fft_cfg fft_inst;
+	#else
+		arm_cfft_radix4_instance_q15 fft_inst;
+	#endif
 
 	size_t dynamic_memory_ = 0;
-	int16_t *window_ = nullptr;
+	DATA_TYPE *window_ = nullptr;
 	bool valid_ = false;
 	Parameters params_;
+	uint8_t state;
 
 
 
 	bool allocateBuffers(){
-		window_ = (int16_t *) malloc(params_.window_length * sizeof(int16_t));
+		window_ = (DATA_TYPE *) malloc(params_.window_length * sizeof(DATA_TYPE));
 		if(!window_) return false;
-		dynamic_memory_ += params_.window_length * sizeof(int16_t);
+		dynamic_memory_ += params_.window_length * sizeof(DATA_TYPE);
 
-		fft_buffer_ = (int16_t *) malloc( 2 * params_.window_length * sizeof(int16_t));
+		fft_buffer_ = (DATA_TYPE *) malloc( 2 * params_.window_length * sizeof(DATA_TYPE));
 		if(!fft_buffer_) return false;
-		dynamic_memory_ += 2 * parsams_.window_length * sizeof(int16_t);
+		dynamic_memory_ += 2 * params_.window_length * sizeof(DATA_TYPE);
 
-		output_ = (int16_t *) malloc( params_.window_length * sizeof(int16_t) / 2);
+		output_ = (DATA_TYPE *) malloc( params_.window_length * sizeof(DATA_TYPE) / 2);
 		if(!output_) return false;
-		dynamic_memory_ += params_.window_length * sizeof(int16_t) / 2;
+		dynamic_memory_ += params_.window_length * sizeof(DATA_TYPE) / 2;
 
-
+		return true;
 
 	}
 };

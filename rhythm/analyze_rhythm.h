@@ -1,12 +1,17 @@
 #ifndef analyze_rhythm_h_
 #define analyze_rhythm_h_
 
-#include "analyze_fft1024.h"
+#include "analyze_fft_parametric.h"
 #include "analyze_beats.h"
 #include "analyze_spectral_novelty.h"
 #include "analyze_tempo.h"
 #include "parameters.h"
+
+#if defined(TRAIN_PARAMETERS)
+#include "MockAudioStream.h"
+#else
 #include "AudioStream.h"
+#endif
 
 static const size_t FFT_RESOLUTION = SAMPLE_RATE/FFT_HOP_LENGTH;
 
@@ -15,7 +20,7 @@ class AudioAnalyzeRhythmDetector : public AudioStream {
 
 public:
   AudioAnalyzeRhythmDetector(float mock_bpm = 0) : AudioStream(1, inputQueueArray), fft_connection(*this, 0, fft, 0), mock_bpm_(mock_bpm){
-    fft.windowFunction(AudioWindowHanning1024);
+    // fft.windowFunction(AudioWindowHanning1024);
   }
 
   void compute(){
@@ -81,7 +86,7 @@ public:
  }
 
 private:
-  AudioAnalyzeFFT1024 fft;
+  AudioAnalyzeFFTParametric fft;
   AudioConnection fft_connection;
 	audio_block_t *inputQueueArray[1];
   AudioAnalyzeSpectralNovelty spectral_novelty_;

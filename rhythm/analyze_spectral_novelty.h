@@ -2,7 +2,7 @@
 #ifndef analyze_spectral_novelty_h_
 #define analyze_spectral_novelty_h_
 
-#include "analyze_fft1024.h"
+#include "analyze_fft_parametric.h"
 #include "parameters.h"
 
 static const size_t PLOT_STEP = TIME_BINS/PLOT_BINS;
@@ -19,7 +19,7 @@ public:
     }
   }
 
-void compute(AudioAnalyzeFFT1024 &fft){
+void compute(AudioAnalyzeFFTParametric &fft){
     size_t curr_spectrum = (prev_spectrum+1)%2;
     novelty_curve[novelty_index] = 0;
     for(size_t i = 0; i < FFT_HOP_LENGTH; i++){
@@ -51,9 +51,9 @@ void compute(AudioAnalyzeFFT1024 &fft){
       float value = peak_curve[i1];
       max_peak = fmax(max_peak, value);
       if(value >= peak_curve[i0] && value > peak_curve[i2]){
-        peaks[i1] = {i, value};
+        peaks[i1] = Peak(i, value);
       }else{
-        peaks[i1] = {i, 0};
+        peaks[i1] = Peak(i, 0);
       }
     }
 
@@ -61,7 +61,7 @@ void compute(AudioAnalyzeFFT1024 &fft){
     if(novelty_index % PLOT_STEP == 0){
       novelty_plot[ novelty_index / PLOT_STEP] = 0.f;
     }
-    novelty_plot[ novelty_index / PLOT_STEP] = max(peak_curve[novelty_index], novelty_plot[ novelty_index / PLOT_STEP]) ;
+    novelty_plot[ novelty_index / PLOT_STEP] = fmax(peak_curve[novelty_index], novelty_plot[ novelty_index / PLOT_STEP]) ;
 #endif // DEBUG
 
     prev_spectrum = curr_spectrum;
@@ -94,6 +94,8 @@ void compute(AudioAnalyzeFFT1024 &fft){
   struct Peak{
     size_t index;
     float value;
+    Peak() : index(0), value(0) {}
+    Peak(size_t index, float value) : index(index), value(value){}
   };
 
   enum PeakSortOrder{

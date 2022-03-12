@@ -1,6 +1,19 @@
 #ifndef analyze_beats_h_
 #define analyze_beats_h_
 
+
+#if defined(TRAIN_PARAMETERS)
+#include <chrono>
+#include <thread>
+uint64_t micros(){
+  return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();;
+}
+void delay(uint32_t ms){
+  std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+#else
+#endif
+
 #include "analyze_spectral_novelty.h"
 #include "parameters.h"
 

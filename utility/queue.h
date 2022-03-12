@@ -1,12 +1,9 @@
-#ifndef audio_block_queue_h_
-#define audio_block_queue_h_
-
-#include "AudioStream.h"
-
+#ifndef queue_h_
+#define queue_h_
 
 // simple circular buffer queue, code adapted from https://www.geeksforgeeks.org/queue-set-1introduction-and-array-implementation/
 // interface intended to mimic std::queue
-class queue<T> {
+template <typename T> class queue {
 public:
 
     queue(size_t capacity) : capacity_(capacity) {
@@ -44,7 +41,6 @@ public:
         int item = buffer_[front_];
         front_ = (front_ + 1) % capacity_;
         size_ = size_ - 1;
-        return item;
     }
 
     // front() on empty queue undefined
@@ -55,14 +51,14 @@ public:
     }
 
     // back() on empty queue undefined
-    T &back(Queue* queue)
+    T &back()
     {
         if (empty())
             return buffer_[0];
         return buffer_[rear_];
     }
 
-    bool valid() const {return valid_};
+    bool valid() const {return valid_;};
     size_t dynamic_memory() const {return capacity_ * sizeof(T);}
 private:
     ssize_t front_ = 0;
@@ -74,4 +70,4 @@ private:
 };
 
 
-#endif // audio_block_queue_h_
+#endif // queue_h_
