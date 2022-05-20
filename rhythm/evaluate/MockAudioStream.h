@@ -36,8 +36,8 @@ public:
 	~AudioConnection() {
 		disconnect();
 	}
-	void disconnect(void){}
-	void connect(void){}
+	void disconnect(void);
+	void connect(void);
 protected:
 	AudioStream &src;
 	AudioStream &dst;
@@ -52,35 +52,35 @@ class AudioStream
 public:
 	AudioStream(unsigned char ninput, audio_block_t **iqueue) :
 		num_inputs(ninput), inputQueue(iqueue) {
-			// active = false;
-			// destination_list = NULL;
-			// for (int i=0; i < num_inputs; i++) {
-			// 	inputQueue[i] = NULL;
-			// }
-			// // add to a simple list, for update_all
-			// // TODO: replace with a proper data flow analysis in update_all
-			// if (first_update == NULL) {
-			// 	first_update = this;
-			// } else {
-			// 	AudioStream *p;
-			// 	for (p=first_update; p->next_update; p = p->next_update) ;
-			// 	p->next_update = this;
-			// }
-			// next_update = NULL;
-			// cpu_cycles = 0;
-			// cpu_cycles_max = 0;
-			// numConnections = 0;
+			active = false;
+			destination_list = NULL;
+			for (int i=0; i < num_inputs; i++) {
+				inputQueue[i] = NULL;
+			}
+			// add to a simple list, for update_all
+			// TODO: replace with a proper data flow analysis in update_all
+			if (first_update == NULL) {
+				first_update = this;
+			} else {
+				AudioStream *p;
+				for (p=first_update; p->next_update; p = p->next_update) ;
+				p->next_update = this;
+			}
+			next_update = NULL;
+			numConnections = 0;
 		}
 protected:
 	bool active;
 	unsigned char num_inputs;
-	static audio_block_t * allocate(void){return nullptr;};
+	static audio_block_t * allocate(void);
 	static void release(audio_block_t * block);
-	void transmit(audio_block_t *block, unsigned char index = 0){}
-	audio_block_t * receiveReadOnly(unsigned int index = 0){return nullptr;}
-	audio_block_t * receiveWritable(unsigned int index = 0){return nullptr;}
+	void transmit(audio_block_t *block, unsigned char index = 0);
+	audio_block_t * receiveReadOnly(unsigned int index = 0);
+	audio_block_t * receiveWritable(unsigned int index = 0);
 	friend class AudioConnection;
 	uint8_t numConnections;
+	static void update_all(void);
+
 private:
 	AudioConnection *destination_list;
 	audio_block_t **inputQueue;

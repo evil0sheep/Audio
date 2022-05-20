@@ -2,7 +2,7 @@ CXX=clang++
 RM=rm -f
 
 CPPFLAGS=-std=c++14 -g -O3 -D TRAIN_PARAMETERS
-LDFLAGS=-lkissfft-float
+LDFLAGS=-lkissfft-float -lmad
 
 # Make does not offer a recursive wildcard function, so here's one:
 rwildcard=$(wildcard $(addsuffix $2, $1)) $(foreach d,$(wildcard $(addsuffix *, $1)),$(call rwildcard,$d/,$2))
@@ -16,6 +16,7 @@ CC_SRCS := $(filter %.cpp,$(SRCS))
 OBJS := $(patsubst %.cpp,%.o,$(CC_SRCS))
 DEPFILES := $(patsubst %.cpp,%.d,$(CC_SRCS))
 
+
 # $(warning CC_SRCS is $(CC_SRCS))
 # $(warning OBJS is $(OBJS))
 # $(warning DEPFILES is $(DEPFILES))
@@ -24,6 +25,9 @@ DEPFILES := $(patsubst %.cpp,%.d,$(CC_SRCS))
 -include $(DEPFILES)
 
 all: bin/evaluate
+
+# run: bin/evaluate
+#     ./bin/evaluate
 
 %.o: %.cpp Makefile
 	$(CXX) $(CPPFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
