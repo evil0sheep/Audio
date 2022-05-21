@@ -84,6 +84,9 @@ public:
         continuity_viz[i] = continuityError(i, expected_last_beat_index_, bpm, fft_res);;
       }
 
+      float filter_param = 1;
+      confidence = filter_param * best_score_[num_candidates-1] + (1- filter_param) * confidence;
+
 #endif // DEBUG
 
   }
@@ -93,6 +96,7 @@ public:
   float expectation_viz[TIME_BINS];
   float continuity_viz[TIME_BINS];
   float debug;
+  float confidence;
 #endif // DEBUG
 
 

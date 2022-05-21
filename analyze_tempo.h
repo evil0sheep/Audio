@@ -36,10 +36,12 @@ public:
 
 #if DEBUG
       if(i % NOV_SPECTRUM_PLOT_STEP == 0){
-        novelty_spectrum_plot[ i / NOV_SPECTRUM_PLOT_STEP] = 0;
+        novelty_spectrum_plot[ i /  NOV_SPECTRUM_PLOT_STEP] = 0;
+        novelty_spectrum_plot_weighted[ i /  NOV_SPECTRUM_PLOT_STEP] = 0;
       }
       if(novelty_spectrum[i] > novelty_spectrum_plot[ i / NOV_SPECTRUM_PLOT_STEP]){
          novelty_spectrum_plot[ i / NOV_SPECTRUM_PLOT_STEP] = novelty_spectrum[i];
+         novelty_spectrum_plot_weighted[ i / NOV_SPECTRUM_PLOT_STEP] = combined_bpm_weighting(i, center_frequency_bpm_, last_bpm_) * novelty_spectrum[i];
       }
 #endif // DEBUG
 
@@ -51,10 +53,25 @@ public:
 //    return getPeakForBpmRange(center_frequency_bpm * 2.f/3.f, center_frequency_bpm * 4.f/3.f) * bin_resolution_bpm;
 //  }
 
-  float bpm(float center_frequency_bpm = DEFAULT_CENTER_BPM){
-    float bpm = interpolatePeak(index(center_frequency_bpm)) * bin_resolution_bpm;
-    return isnan(bpm) || bpm <= 0 ? center_frequency_bpm : bpm;
+  float bpm_weighting(uint32_t bin_index, float bpm, float width){
+    float period = 1/(bin_index * bin_resolution_bpm);
+    float weighting = logf(period/(1/bpm))/width;
+    weighting = expf(-0.5 * weighting * weighting);
+    return weighting;
   }
+
+  float combined_bpm_weighting(uint32_t bin_index, float center_frequency_bpm, last_bpm){
+    return CENTER_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, center_frequency_bpm, CENTER_BPM_FILTER_WIDTH) * LAST_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, last_bpm, LAST_BPM_FILTER_WIDTH);
+  }
+
+  float bpm(float center_frequency_bpm = DEFAULT_CENTER_BPM){
+    center_frequency_bpm_ = center_frequency_bpm;
+    float bpm = interpolatePeak(index(center_frequency_bpm)) * bin_resolution_bpm;
+    last_bpm_ =  isnan(bpm) || bpm <= 0 ? center_frequency_bpm : bpm;
+
+    return last_bpm_;
+  }
+
   size_t index(float center_frequency_bpm){
 
       size_t bottom_bin = (center_frequency_bpm/2) / bin_resolution_bpm;
@@ -64,10 +81,7 @@ public:
       size_t max_index = 0;
 
       for (size_t i=bottom_bin; i < top_bin; i++) {
-          float period = 1/(i * bin_resolution_bpm);
-          float weighting = logf(period/(1/center_frequency_bpm))/WEIGHTING_WIDTH;
-          weighting = expf(-0.5 * weighting * weighting);
-          float weighted_value = weighting * novelty_spectrum[i];
+          float weighted_value = combined_bpm_weighting(i, center_frequency_bpm, last_bpm_) * novelty_spectrum[i];
           if(weighted_value > max_value){
             max_value = weighted_value;
             max_index= i;
@@ -86,11 +100,13 @@ public:
     if(i > PLOT_BINS) return 0.f;
     return novelty_spectrum_plot[i % PLOT_BINS];
   }
-  float readNoveltySpectrum(size_t i) const{
-    if(i > PLOT_BINS) return 0.f;
-    return novelty_spectrum_plot[i % PLOT_BINS];
-  }
 
+  float novelty_spectrum_plot_weighted[PLOT_BINS];
+  float readNoveltySpectrumPlotWeighted(size_t i) const{
+    if(i > PLOT_BINS) return 0.f;
+    return novelty_spectrum_plot_weighted[i % PLOT_BINS];
+  }
+  float center_frequency_bpm_ = 120;
 #endif // DEBUG
 
 private:
@@ -100,6 +116,8 @@ private:
   float novelty_fft_buffer[ 2 * TIME_BINS];
 
   float novelty_spectrum[NOV_SPECTRUM_BINS];
+
+  float last_bpm_ = DEFAULT_CENTER_BPM;
 
   size_t getPeakForBpmRange(float low_bpm, float high_bpm){
 

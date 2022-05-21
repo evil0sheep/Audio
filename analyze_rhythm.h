@@ -65,6 +65,7 @@ public:
 
   AudioAnalyzeBeatTracker beat_tracker_;
   AudioAnalyzeBeatTracker downbeat_estimator_;
+  AudioAnalyzeTempoDetector tempo_detector_;
 
 
 
@@ -85,7 +86,6 @@ private:
   AudioConnection fft_connection;
 	audio_block_t *inputQueueArray[1];
   AudioAnalyzeSpectralNovelty spectral_novelty_;
-  AudioAnalyzeTempoDetector tempo_detector_;
   AudioAnalyzeSpectralNovelty::Peak candidate_beats_[MAX_BEATS];
   bool is_available = false;
   float bpm_ = 120 * BPM_MULTIPLIER;
