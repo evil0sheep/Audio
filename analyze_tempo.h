@@ -60,8 +60,8 @@ public:
     return weighting;
   }
 
-  float combined_bpm_weighting(uint32_t bin_index, float center_frequency_bpm, last_bpm){
-    return CENTER_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, center_frequency_bpm, CENTER_BPM_FILTER_WIDTH) * LAST_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, last_bpm, LAST_BPM_FILTER_WIDTH);
+  float combined_bpm_weighting(uint32_t bin_index, float center_frequency_bpm, float last_bpm){
+    return CENTER_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, center_frequency_bpm, CENTER_BPM_FILTER_WIDTH) + LAST_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, last_bpm, LAST_BPM_FILTER_WIDTH);
   }
 
   float bpm(float center_frequency_bpm = DEFAULT_CENTER_BPM){
