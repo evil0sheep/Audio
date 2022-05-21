@@ -17,10 +17,8 @@ public:
       float last_beat_score = 0;
       last_beat_index_ = num_candidates -1;
 
-       uint32_t current_micros = micros();
-       auto elapsed_micros = current_micros - prev_last_beat_micros_;
-       prev_last_beat_micros_ = current_micros;
-       size_t expected_last_beat_index_ = prev_last_beat_index_ - (elapsed_micros/1000000.f) * fft_res / 8;
+       auto elapsed_seconds = FFT_HOP_LENGTH/SAMPLE_RATE;
+       size_t expected_last_beat_index_ = prev_last_beat_index_ - (elapsed_seconds) * fft_res / 8;
       for(size_t i = 0; i < num_candidates; i++){
         best_score_[i] = 0;//-3.4e8;
         backlink_[i] = 0;
@@ -63,10 +61,11 @@ public:
 #if DEBUG
       memset(beats_viz, 0, TIME_BINS * sizeof(float));
       size_t curr_beat = last_beat_index_;
-      while(curr_beat != 0){
-        beats_viz[candidate_beats_[curr_beat].index] = 1;
-        curr_beat=backlink_[curr_beat];
-      }
+        while(curr_beat != 0){
+          beats_viz[candidate_beats_[curr_beat].index] = 1;
+          break;
+          curr_beat=backlink_[curr_beat];
+        }
 
       memset(expectation_viz, 0, TIME_BINS * sizeof(float));
       // for(int i = expected_last_beat_index_; i >=0; i -= beat_size){
@@ -77,6 +76,8 @@ public:
         if(index < 0) break;
         expectation_viz[index] = 1.0;
       }
+      expectation_viz[expected_last_beat_index_] = 1.5;
+
 
       memset(continuity_viz, 0, TIME_BINS * sizeof(float));
       for(int i = 0; i <TIME_BINS; i ++){
@@ -162,9 +163,7 @@ private:
         float a = beat_phase(index, bpm, fft_res);
         float b = beat_phase(expected_index, bpm, fft_res);
         float m = 1.f;
-        if(prev_last_beat_micros_ !=0 ){
-         continuity_error = 2* (0.5- fabs(m/2.f - fmod((3*m)/2+a-b, m)));
-        }
+        continuity_error = 2* (0.5- fabs(m/2.f - fmod((3*m)/2+a-b, m)));
         return continuity_error;
   }
 };

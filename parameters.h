@@ -17,15 +17,15 @@
 #define MAX_BEATS  256
 #define ENVELOPE_WEIGHT 1
 #define TEMPO_WEIGHT 5
-#define CONTINUITY_WEIGHT 5
+#define CONTINUITY_WEIGHT 10
 #define RECURSION_WEIGHT 1
 #define BACKLINK_PENALTY 2
 #define SIGMA 1
 #define TEMPO_ERROR_THRESHOLD -0.05
-#define BPM_FILTER_PARAM 0.01
+#define BPM_FILTER_PARAM 0.1 //0.01
 #define BPM_MULTIPLIER 1
 #define NUM_BEATS_TO_SEARCH 8
 
 // Debug params
-#define DEBUG 0
+#define DEBUG 1
 #define PLOT_BINS  512

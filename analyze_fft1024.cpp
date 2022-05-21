@@ -97,12 +97,12 @@ void AudioAnalyzeFFT1024::update(void)
 	case 7:
 		blocklist[7] = block;
 
-		if(outputflag){
-			dropped_blocks++;
-			Serial.print("Dropped ");
-			Serial.print(dropped_blocks*4);
-			Serial.println(" Blocks!");
-		}
+		// if(outputflag){
+		// 	dropped_blocks++;
+		// 	Serial.print("Dropped ");
+		// 	Serial.print(dropped_blocks*4);
+		// 	Serial.println(" Blocks!");
+		// }
 		// TODO: perhaps distribute the work over multiple update() ??
 		//       github pull requsts welcome......
 		copy_to_fft_buffer(buffer+0x000, blocklist[0]->data);

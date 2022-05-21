@@ -57,11 +57,11 @@ void compute(AudioAnalyzeFFT1024 &fft){
       }
     }
 
-#ifdef DEBUG
-    if(novelty_index % PLOT_STEP == 0){
-      novelty_plot[ novelty_index / PLOT_STEP] = 0.f;
-    }
-    novelty_plot[ novelty_index / PLOT_STEP] = max(peak_curve[novelty_index], novelty_plot[ novelty_index / PLOT_STEP]) ;
+#if DEBUG
+    // if(novelty_index % PLOT_STEP == 0){
+    //   novelty_plot[ novelty_index / PLOT_STEP] = 0.f;
+    // }
+    // novelty_plot[ novelty_index / PLOT_STEP] = max(peak_curve[novelty_index], novelty_plot[ novelty_index / PLOT_STEP]) ;
 #endif // DEBUG
 
     prev_spectrum = curr_spectrum;
@@ -118,7 +118,7 @@ void compute(AudioAnalyzeFFT1024 &fft){
   }
 
 
-#ifdef DEBUG
+#if DEBUG
   // if you Serial.print this buffer one bin per line the Arduino Serial Plotter can render the novelty curve
   float novelty_plot[PLOT_BINS];
   float readPlot(size_t i) const {

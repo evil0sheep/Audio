@@ -34,7 +34,7 @@ public:
       float imag = novelty_fft_buffer[i * 2 + 1];
       novelty_spectrum[i] = sqrtf(real * real + imag * imag);
 
-#ifdef DEBUG
+#if DEBUG
       if(i % NOV_SPECTRUM_PLOT_STEP == 0){
         novelty_spectrum_plot[ i / NOV_SPECTRUM_PLOT_STEP] = 0;
       }
@@ -77,15 +77,16 @@ public:
       return max_index ;
   }
 
-  float readNoveltySpectrum(size_t i) const{
-    if(i > PLOT_BINS) return 0.f;
-    return novelty_spectrum_plot[i % PLOT_BINS];
-  }
 
-#ifdef DEBUG
+
+#if DEBUG
   // if you Serial.print this buffer one bin per line the Arduino Serial Plotter can render the novelty spectrum
   float novelty_spectrum_plot[PLOT_BINS];
   float readNoveltySpectrumPlot(size_t i) const{
+    if(i > PLOT_BINS) return 0.f;
+    return novelty_spectrum_plot[i % PLOT_BINS];
+  }
+  float readNoveltySpectrum(size_t i) const{
     if(i > PLOT_BINS) return 0.f;
     return novelty_spectrum_plot[i % PLOT_BINS];
   }
