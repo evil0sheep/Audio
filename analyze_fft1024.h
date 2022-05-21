@@ -91,6 +91,7 @@ private:
 	const int16_t *window;
 	audio_block_t *blocklist[8];
 	int16_t buffer[2048] __attribute__ ((aligned (4)));
+	uint32_t dropped_blocks = 0;
 	//uint32_t sum[512];
 	//uint8_t count;
 	uint8_t state;
