@@ -23,6 +23,15 @@ public:
   // This should be run as interrupt to ensure we don't drop any audio blocks
   void update_novelty() {
     if(fft.available()){
+      float bass_power = 0;
+      float max_power = EPSILON;
+      for(uint32_t i = 0; i < FFT_HOP_LENGTH; i++){
+        max_power = fmax(max_power, fft.read(i));
+        if(i < BASS_CONFIDENCE_BINS){
+          bass_power += fft.read(i);
+        }
+      }
+      bass_confidence_ = BASS_CONFIDENCE_FILTER_PARAMETER * (bass_power/BASS_CONFIDENCE_BINS / max_power) + (1.0 - BASS_CONFIDENCE_FILTER_PARAMETER) * bass_confidence_;
       spectral_novelty_.compute(fft);
       is_available = true;
     }
@@ -64,7 +73,8 @@ public:
   float bpm() { return mock_bpm_ == 0.f ? bpm_: mock_bpm_;}
   float beatPhase(){ return mock_bpm_ == 0.f ? beat_tracker_.beatPhase() : (micros() % ((uint32_t) mock_micros_per_beat_)) / mock_micros_per_beat_; }
   float barPhase(){ return mock_bpm_ == 0.f ? downbeat_estimator_.beatPhase() : (micros() % ((uint32_t) mock_micros_per_beat_ * 4)) / (mock_micros_per_beat_ * 4);}
-  float tempo_confidence() const { return tempo_detector_.confidence();}
+  float tempoConfidence() const { return tempo_detector_.confidence();}
+  float bassConfidence() const {return bass_confidence_;}
 
   bool available(){
     if(is_available){
@@ -112,6 +122,7 @@ private:
   float bpm_ = 120 * BPM_MULTIPLIER;
   float mock_bpm_ = 0.0;
   float mock_micros_per_beat_ = 0;
+  float bass_confidence_ = 0;
   IntervalTimer timer_;
   static AudioAnalyzeRhythmDetector *singleton; // for timer interrupt
 };
