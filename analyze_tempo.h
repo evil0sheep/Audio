@@ -66,10 +66,24 @@ public:
     return CENTER_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, center_frequency_bpm, CENTER_BPM_FILTER_WIDTH) + LAST_BPM_FILTER_WEIGHT * bpm_weighting(bin_index, last_bpm, LAST_BPM_FILTER_WIDTH);
   }
 
-  float bpm(float center_frequency_bpm = DEFAULT_CENTER_BPM){
+  float bpm( float center_frequency_bpm = DEFAULT_CENTER_BPM){
     center_frequency_bpm_ = center_frequency_bpm;
-    float bpm = interpolatePeak(index(center_frequency_bpm)) * bin_resolution_bpm;
+
+    uint32_t peak_index = index(center_frequency_bpm);
+    float bpm = interpolatePeak(peak_index) * bin_resolution_bpm;
     last_bpm_ =  isnan(bpm) || bpm <= 0 ? center_frequency_bpm : bpm;
+
+    float novelty_spectrum_avg = 0;
+    uint32_t count = NOV_SPECTRUM_BINS/2;
+    for(int i = 0;  i < count; i++){
+      novelty_spectrum_avg +=  novelty_spectrum[i];
+    }
+    novelty_spectrum_avg /= count;
+
+    float peak_value = novelty_spectrum[peak_index];
+    // float unfiltered_confidence = (peak_value - novelty_spectrum_avg) / novelty_spectrum_avg;
+    float unfiltered_confidence = peak_value/novelty_spectrum_avg;
+    confidence_ = CONFIDENCE_FILTER_PARAMETER * unfiltered_confidence + (1.f - CONFIDENCE_FILTER_PARAMETER) * confidence_;
 
     return last_bpm_;
   }
@@ -93,7 +107,7 @@ public:
       return max_index ;
   }
 
-
+  float confidence() const {return confidence_;}
 
 #if DEBUG
   // if you Serial.print this buffer one bin per line the Arduino Serial Plotter can render the novelty spectrum
@@ -123,6 +137,7 @@ private:
 
   // Temporary storage for use in compute()
   float fft_buffer_temp_[TIME_BINS];
+  float confidence_ = 0;
 
   size_t getPeakForBpmRange(float low_bpm, float high_bpm){
 

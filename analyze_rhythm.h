@@ -64,7 +64,7 @@ public:
   float bpm() { return mock_bpm_ == 0.f ? bpm_: mock_bpm_;}
   float beatPhase(){ return mock_bpm_ == 0.f ? beat_tracker_.beatPhase() : (micros() % ((uint32_t) mock_micros_per_beat_)) / mock_micros_per_beat_; }
   float barPhase(){ return mock_bpm_ == 0.f ? downbeat_estimator_.beatPhase() : (micros() % ((uint32_t) mock_micros_per_beat_ * 4)) / (mock_micros_per_beat_ * 4);}
-
+  float tempo_confidence() const { return tempo_detector_.confidence();}
 
   bool available(){
     if(is_available){
