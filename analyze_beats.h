@@ -7,7 +7,8 @@
 class AudioAnalyzeBeatTracker{
 public:
 
-  void trackBeats(const AudioAnalyzeSpectralNovelty &novelty_function, const AudioAnalyzeSpectralNovelty::Peak *candidate_beats, size_t num_candidates, float bpm, size_t fft_res, size_t tightness){
+  void trackBeats(const AudioAnalyzeSpectralNovelty &novelty_function, int novelty_update_count,
+    const AudioAnalyzeSpectralNovelty::Peak *candidate_beats, size_t num_candidates, float bpm, size_t fft_res, size_t tightness){
       memcpy(candidate_beats_,  &candidate_beats[MAX_BEATS - num_candidates], num_candidates * sizeof(AudioAnalyzeSpectralNovelty::Peak));
 
 
@@ -17,7 +18,8 @@ public:
       float last_beat_score = 0;
       last_beat_index_ = num_candidates -1;
 
-       auto elapsed_seconds = FFT_HOP_LENGTH/SAMPLE_RATE;
+       auto elapsed_seconds = FFT_HOP_LENGTH/SAMPLE_RATE * novelty_update_count;
+
        size_t expected_last_beat_index_ = prev_last_beat_index_ - (elapsed_seconds) * fft_res / 8;
       for(size_t i = 0; i < num_candidates; i++){
         best_score_[i] = 0;//-3.4e8;

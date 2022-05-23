@@ -18,9 +18,11 @@ public:
   }
 
   void compute(const AudioAnalyzeSpectralNovelty &novelty_function){
+    novelty_function.readAll(fft_buffer_temp_);
+
     memset(novelty_fft_buffer, 0, 2 * TIME_BINS * sizeof(float));
     for(size_t i = 0; i < TIME_BINS; i++){
-      novelty_fft_buffer[ i * 2] = novelty_function.read(i);
+      novelty_fft_buffer[ i * 2] = fft_buffer_temp_[i];
     }
     arm_cfft_radix2_f32 (&novelty_fft, novelty_fft_buffer);
     for (size_t i=0; i < NOV_SPECTRUM_BINS; i++) {
@@ -118,6 +120,9 @@ private:
   float novelty_spectrum[NOV_SPECTRUM_BINS];
 
   float last_bpm_ = DEFAULT_CENTER_BPM;
+
+  // Temporary storage for use in compute()
+  float fft_buffer_temp_[TIME_BINS];
 
   size_t getPeakForBpmRange(float low_bpm, float high_bpm){
 

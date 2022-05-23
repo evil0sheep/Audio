@@ -16,6 +16,16 @@ class AudioAnalyzeRhythmDetector : public AudioStream {
 public:
   AudioAnalyzeRhythmDetector(float mock_bpm = 0) : AudioStream(1, inputQueueArray), fft_connection(*this, 0, fft, 0), mock_bpm_(mock_bpm){
     fft.windowFunction(AudioWindowHanning1024);
+    // We need a global for the timer interrupt so there should only be one object instance.
+    singleton = this;
+  }
+
+  // This should be run as interrupt to ensure we don't drop any audio blocks
+  void update_novelty() {
+    if(fft.available()){
+      spectral_novelty_.compute(fft);
+      is_available = true;
+    }
   }
 
   void compute(){
@@ -27,21 +37,22 @@ public:
       return;
     }
 
-    if(fft.available()){
+    if(is_available){
       auto start = micros();
-      spectral_novelty_.compute(fft);
+
       tempo_detector_.compute(spectral_novelty_);
       bpm_ = (1- BPM_FILTER_PARAM) * bpm_ + BPM_FILTER_PARAM * tempo_detector_.bpm();
 
       // first send the full set of candidate peaks to the beat tracker
-      spectral_novelty_.getPeaks(candidate_beats_, MAX_BEATS, AudioAnalyzeSpectralNovelty::PeakSortOrder::INDEX);
-      beat_tracker_.trackBeats(spectral_novelty_, candidate_beats_, MAX_BEATS, bpm_, FFT_RESOLUTION, TIGHTNESS);
+      int novelty_update_count = spectral_novelty_.getPeaks(
+        candidate_beats_, MAX_BEATS, AudioAnalyzeSpectralNovelty::PeakSortOrder::INDEX);
+
+      beat_tracker_.trackBeats(spectral_novelty_, novelty_update_count, candidate_beats_,
+        MAX_BEATS, bpm_, FFT_RESOLUTION, TIGHTNESS);
 
       // size_t num_beats = beat_tracker_.getBeats(candidate_beats_, MAX_BEATS);
       // downbeat_estimator_.trackBeats(spectral_novelty_, candidate_beats_, num_beats, bpm_/4.0, FFT_RESOLUTION, TIGHTNESS);
 
-
-      is_available = true;
       elapsed = micros() - start;
     }
   }
@@ -67,8 +78,6 @@ public:
   AudioAnalyzeBeatTracker downbeat_estimator_;
   AudioAnalyzeTempoDetector tempo_detector_;
 
-
-
  uint32_t elapsed=0;
 
  virtual void update(void){
@@ -81,6 +90,18 @@ public:
     release(block);
  }
 
+ float getNoveltyUpdatePeriod() { return 0.1 * 1000000 * FFT_HOP_LENGTH / SAMPLE_RATE; }
+
+ void beginTimerInterrupt() {
+    timer_.priority(255); // low priority, don't interrupt low level shit
+    timer_.begin(timer_interrupt, getNoveltyUpdatePeriod());
+ }
+
+private:
+ static void timer_interrupt() {
+   singleton->update_novelty();
+ }
+
 private:
   AudioAnalyzeFFT1024 fft;
   AudioConnection fft_connection;
@@ -91,7 +112,10 @@ private:
   float bpm_ = 120 * BPM_MULTIPLIER;
   float mock_bpm_ = 0.0;
   float mock_micros_per_beat_ = 0;
-
+  IntervalTimer timer_;
+  static AudioAnalyzeRhythmDetector *singleton; // for timer interrupt
 };
+
+AudioAnalyzeRhythmDetector *AudioAnalyzeRhythmDetector::singleton;
 
 #endif // analyze_rhythm_h_

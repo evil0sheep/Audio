@@ -32,6 +32,8 @@ void compute(AudioAnalyzeFFT1024 &fft){
 
     }
 
+    novelty_update_count_++;
+
     // subtract the local average so only peaks_ remain
     float local_average = 0;
     for(size_t i = 0; i < LOCAL_AVG_SAMPLES; i++){
@@ -83,9 +85,11 @@ void compute(AudioAnalyzeFFT1024 &fft){
 
   // |out| must point to an array at least TIME_BINS long
   void readAll(float * out) const {
+    __disable_irq(); // prevent race with compute() running as interrupt
     for(size_t i = 0; i < TIME_BINS; i++){
        out[i] = peak_curve_[(novelty_index_ + i) % TIME_BINS] / max_peak_;
     }
+    __enable_irq();
   }
 
   size_t length() const { return TIME_BINS;}
@@ -102,11 +106,20 @@ void compute(AudioAnalyzeFFT1024 &fft){
   };
 
   // writes the |n| highest peaks_ into |out| in order of |order|
-  void  getPeaks(Peak* out, size_t n, PeakSortOrder order = PeakSortOrder::INDEX){
-    // first sort the peaks_ by value to find the N highest
-    qsort(peaks_, TIME_BINS, sizeof(Peak), comparePeakValue );
-    // copy those peaks_ into out buffer
-    memcpy(out, peaks_, n * sizeof(Peak));
+  int  getPeaks(Peak* out, size_t n, PeakSortOrder order = PeakSortOrder::INDEX){
+    int novelty_update_count;
+    {
+      __disable_irq(); // avoid race with compute() running as interrupt
+      novelty_update_count = novelty_update_count_;
+      novelty_update_count_ = 0;
+      memcpy(&peaks_temp_, &peaks_, sizeof(Peak) * TIME_BINS);
+      __enable_irq();
+    }
+
+    // first sort the peaks by value to find the N highest
+    qsort(peaks_temp_, TIME_BINS, sizeof(Peak), comparePeakValue );
+    // copy those peaks into out buffer
+    memcpy(out, peaks_temp_, n * sizeof(Peak));
 
     for(size_t i = 0; i< n; i++){
       out[i].value /= max_peak_;
@@ -115,6 +128,8 @@ void compute(AudioAnalyzeFFT1024 &fft){
     if(order == PeakSortOrder::INDEX){
       qsort(out, n, sizeof(Peak), comparePeakIndex );
     }
+
+    return novelty_update_count;
   }
 
 
@@ -142,6 +157,10 @@ private:
    float max_peak_ = EPSILON;
    // Sorted list of peaks_ in peak curve.
    Peak peaks_[TIME_BINS];
+   // Temporary copy of peaks for working outside interrupts
+   Peak peaks_temp_[TIME_BINS];
+
+  int novelty_update_count_ = 0;
 
    // peak comparators for sorting
    static int comparePeakValue( const void* a, const void* b)
