@@ -25,13 +25,13 @@ public:
     if(fft.available()){
       float bass_power = 0;
       float max_power = EPSILON;
-      for(uint32_t i = 0; i < FFT_HOP_LENGTH; i++){
+      for(uint32_t i = BASS_CONFIDENCE_BOTTOM_BIN; i < FFT_HOP_LENGTH; i++){
         max_power = fmax(max_power, fft.read(i));
-        if(i < BASS_CONFIDENCE_BINS){
+        if(i < BASS_CONFIDENCE_TOP_BIN){
           bass_power += fft.read(i);
         }
       }
-      bass_confidence_ = BASS_CONFIDENCE_FILTER_PARAMETER * (bass_power/BASS_CONFIDENCE_BINS / max_power) + (1.0 - BASS_CONFIDENCE_FILTER_PARAMETER) * bass_confidence_;
+      bass_confidence_ = BASS_CONFIDENCE_FILTER_PARAMETER * (bass_power/(BASS_CONFIDENCE_TOP_BIN - BASS_CONFIDENCE_BOTTOM_BIN) / max_power) + (1.0 - BASS_CONFIDENCE_FILTER_PARAMETER) * bass_confidence_;
       spectral_novelty_.compute(fft);
       is_available = true;
     }

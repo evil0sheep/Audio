@@ -12,11 +12,14 @@ public:
   AudioAnalyzeSpectralNovelty(){
     memset(novelty_curve_, 0, TIME_BINS * sizeof(float));
     memset(peak_curve_, 0, TIME_BINS * sizeof(float));
-    memset(novelty_plot_, 0, PLOT_BINS * sizeof(float));
 
     for(size_t i = 0; i < 2; i++){
       memset(spectrums_, 0, FFT_HOP_LENGTH * sizeof(float));
     }
+
+#if DEBUG
+    memset(novelty_plot_, 0, PLOT_BINS * sizeof(float));
+#endif
   }
 
 void compute(AudioAnalyzeFFT1024 &fft){

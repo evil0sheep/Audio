@@ -122,7 +122,6 @@ public:
     if(i > PLOT_BINS) return 0.f;
     return novelty_spectrum_plot_weighted[i % PLOT_BINS];
   }
-  float center_frequency_bpm_ = 120;
 #endif // DEBUG
 
 private:
@@ -134,6 +133,9 @@ private:
   float novelty_spectrum[NOV_SPECTRUM_BINS];
 
   float last_bpm_ = DEFAULT_CENTER_BPM;
+
+  float center_frequency_bpm_ = DEFAULT_CENTER_BPM;
+
 
   // Temporary storage for use in compute()
   float fft_buffer_temp_[TIME_BINS];
